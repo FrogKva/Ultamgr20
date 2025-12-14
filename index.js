@@ -9,7 +9,7 @@ const io = socketIo(server);
 let messages = [];
 let onlineUsers = {};
 
-app.use(express.static('public'));
+app.use(express.static('publicFiles'));
 
 
 io.on('connection', (socket) => {
@@ -74,4 +74,5 @@ server.listen(PORT, () => {
     console.log(`Сервер запущен на порту ${PORT}`);
     console.log(`Открой http://localhost:${PORT} в браузере`);
     
+
 });
