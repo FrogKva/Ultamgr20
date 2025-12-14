@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <title>Ultimate Messanger (Revenant) </title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif;  }
+        body {
+            margin-top: 0;
+            margin-left: 0;
+            background-color: #313131;
+            color: #cacaca;
+            background-repeat: no-repeat;
+            background-size: cover;
+            font: normal 16px "Roboto", sans-serif;
+      
+
+	 margin: auto;
+	 
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        /* Login screen */
+        #loginScreen {
+            text-align: center;
+            margin-top: 100px;
+        }
+        #loginScreen input {
+            padding: 10px;
+            font-size: 16px;
+            width: 300px;
+            margin: 10px;
+        }
+        #loginScreen button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        /* Chat screen */
+        #chatScreen { display: none; }
+        .header {
+            background: #1c1c1d;
+            color: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            margin-top: 50px;
+        }
+        #usersOnline {
+            font-size: 14px;
+            color: #4CAF50;
+            margin-left: 10px;
+        }
+        
+        /* Messages */
+        #messages {
+            margin-top: 20px;
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #808080;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #a5a5a5;
+        }
+        .message .username {
+            font-weight: bold;
+            color: #dcdcdc;
+        }
+        .message .time {
+            font-size: 12px;
+            color: #999;
+            margin-left: 10px;
+        }
+        .message .text {
+            margin-top: 5px;
+            
+        }
+        .notification {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        /* Input area */
+        #messageForm {
+            display: flex;
+            gap: 10px;
+        }
+        #messageInput {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        header {
+            margin: auto;
+            position: relative;
+            z-index: 1000;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            text-align: center;
+            min-width: 100%;
+            height: 10%;
+            align-content: center;
+            background: #041847;
+            height: 100px;
+            box-shadow: 4px 4px 14px rgba(0, 0, 0, 0.35);
+
+        }
+    </style>
+</head>
+<body>
+    
+	<div id='head'><header ><h2> <img src="https://cdn0.iconfinder.com/data/icons/flowers-and-leaves/37/leaf_5-1024.png" style="max-width: 20px; max-height: 20px;" alt="🍃"	> Providence <code>&lt/&gt</code></h2></header></div>
+
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="loginScreen">
+            <h1>Добро пожаловать</h1>
+            <input type="text" id="usernameInput" placeholder="Введите ваше имя" autocomplete="off">
+            <button onclick="login()">Войти в чат</button>
+            
+        </div>
+        
+        <!-- Chat Screen -->
+        <div id="chatScreen">
+            <div class="header">
+                <span>Чат</span>
+                <span id="usersOnline"></span>
+            </div>
+            
+            <div id="messages"></div>
+            
+            <form id="messageForm">
+                <input type="text" id="messageInput" placeholder="Введите сообщение..." autocomplete="off">
+                <button type="submit">Отправить</button>
+            </form>
+        </div>
+    </div>
+    <audio src="harold-screamer.mp3" id="scream" repeat></audio>
+    <audio src="shame.mp3" id="shame" repeat></audio>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        scream.volume = 1
+        let socket;
+        let currentUsername = '';
+        
+        function login() {
+            const usernameInput = document.getElementById('usernameInput');
+            const username = usernameInput.value.trim();
+            if (!username) {
+                alert('Введите имя!');
+                return;
+            }
+            
+            currentUsername = username;
+  
+            socket = io();
+            
+       
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('chatScreen').style.display = 'block';
+            
+          
+            socket.emit('user login', username);
+       
+            document.getElementById('messageInput').focus();
+            
+ 
+            socket.on('message history', (messages) => {
+                const messagesDiv = document.getElementById('messages');
+                messages.forEach(message => {
+                    displayMessage(message);
+                });
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+            
+            socket.on('chat message', (message) => {
+                displayMessage(message);
+                scrollToBottom();
+            });
+            
+            socket.on('online users', (users) => {
+                document.getElementById('usersOnline').textContent = 
+                    `Онлайн: ${users.length} пользователей`;
+            });
+            
+            socket.on('user joined', (text) => {
+                displayNotification(text);
+            });
+
+            socket.on('scream', (data) => {
+                
+                if(data) scream.play()
+                else shame.play()
+            });
+            
+            socket.on('user left', (text) => {
+                displayNotification(text);
+            });
+        }
+        
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const time = `${message.date} ${message.time}`;
+            messageDiv.innerHTML = `
+                <div>
+                    <span class=" badge bg-${message?.isBot? "danger" : "success"}">${message.username}</span>
+                    <span class="time">${time}</span>
+                </div>
+                <div class="text">${message.text}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+        }
+        
+        function displayNotification(text) {
+            const messagesDiv = document.getElementById('messages');
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'notification';
+            notificationDiv.textContent = text;
+            
+            messagesDiv.appendChild(notificationDiv);
+            scrollToBottom();
+        }
+        
+        function scrollToBottom() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        document.getElementById('messageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (text && currentUsername) {
+                socket.emit('chat message', {
+                    username: currentUsername,
+                    text: text
+                });
+                
+                input.value = '';
+                input.focus();
+            }
+        });
+        
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('messageForm').dispatchEvent(new Event('submit'));
+            }
+        });
+        
+        document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+        
+    </script>
+    <iframe width="110" height="200" src="https://www.myinstants.com/instant/harold-screamer-13724/embed/" frameborder="0" scrolling="no"></iframe>
+</body>
+</html>
